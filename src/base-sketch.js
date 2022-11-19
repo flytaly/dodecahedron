@@ -24,7 +24,8 @@ export default class BaseSketch {
             0.001,
             1000,
         );
-        this.camera.position.set(0, 0, 2);
+
+        this.camera.position.set(2, 0, 4);
         this.camera.lookAt(0, 0, 0);
 
         if (withOrbitControls) {
@@ -66,6 +67,30 @@ export default class BaseSketch {
             this.material.uniforms.u_resolution.value.w = this.height;
         }
         this.camera.updateProjectionMatrix();
+    }
+
+    drawText({ text, fontFamily = 'Roboto', horizontalPadding = 0.75 } = {}) {
+        const texCanvas = document.createElement('canvas');
+        const texCtx = texCanvas.getContext('2d');
+        const idealCanvasSize = 2048;
+        const maxTextureSize = Math.min(this.renderer.capabilities.maxTextureSize, idealCanvasSize);
+        texCanvas.width = maxTextureSize;
+        texCanvas.height = maxTextureSize;
+
+        texCtx.fillStyle = '#fff';
+        texCtx.strokeStyle = '#fff';
+        texCtx.lineWidth = 1;
+        texCtx.textAlign = 'center';
+        texCtx.textBaseline = 'middle';
+        const referenceFontSize = 250;
+        texCtx.font = `${referenceFontSize}px ${fontFamily}`;
+        const textWidth = texCtx.measureText(text).width;
+        const deltaWidth = (texCanvas.width * horizontalPadding) / textWidth;
+        const fontSise = referenceFontSize * deltaWidth;
+        texCtx.font = `${fontSise}px ${fontFamily}`;
+        texCtx.fillText(text, texCanvas.width / 2, texCanvas.height / 2);
+
+        return new THREE.CanvasTexture(texCanvas);
     }
 
     render() {
