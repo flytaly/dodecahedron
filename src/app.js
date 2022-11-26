@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import vertexShader from './shaders/vertex.glsl';
 import fragmentShader from './shaders/fragment.glsl';
 import BaseSketch from './base-sketch';
-import js from './js.png';
 
 /**
  * @arg {THREE.Object3D|THREE.Mesh} mesh
@@ -25,66 +24,70 @@ export default class Sketch extends BaseSketch {
     constructor(selector) {
         super(selector, true);
 
+        this.setValues(1);
         this.addDodecahedronHalf();
+        this.rotateLeafs();
 
-        this.rotate();
-
-        const amb = new THREE.AmbientLight(new THREE.Color(0xffffff), 3);
-        const light = new THREE.PointLight(new THREE.Color(0xffffff), 50);
-        light.position.set(-1, -1, 8);
-        this.scene.add(amb);
-        this.scene.add(light);
-
-        const axesHelper = new THREE.AxesHelper(3);
-        this.scene.add(axesHelper);
+        const g = new THREE.SphereGeometry(0.03, 4, 4);
+        const m = new THREE.MeshPhongMaterial({ color: 'blue' });
+        const mesh = new THREE.Mesh(g, m);
+        mesh.position.set(3, 1, 2);
+        this.scene.add(mesh);
 
         this.animate();
     }
 
-    createPentagon(radius = 1, index = 1) {
-        const material = new THREE.ShaderMaterial({
-            uniforms: {
-                u_texture: { value: this.drawText({ text: index, horizontalPadding: 0.2 }) },
-                u_bgColor: { value: new THREE.Color('blue') },
-            },
-            side: THREE.DoubleSide,
-            vertexShader,
-            fragmentShader,
-        });
+    setValues(radius = 1) {
+        this.radius = radius;
+        this.pentaAngle = (2 * Math.PI) / 5;
+        this.apothem = Math.cos(this.pentaAngle / 2) * radius;
+        this.zAxis = new THREE.Vector3(0, 0, 1);
+        this.dihedralAngle = (Math.PI * 116.56505) / 180;
+    }
+
+    createPentagon({ radius = 1, index = 1, material = null }) {
+        material =
+            material ||
+            new THREE.ShaderMaterial({
+                uniforms: {
+                    u_time: { value: 0 },
+                    u_texture: { value: this.drawText({ text: index, horizontalPadding: 0.2 }) },
+                    u_bgColor: { value: new THREE.Color('blue') },
+                    u_lightPos: { value: new THREE.Vector3(3, 1, 2) },
+                },
+                side: THREE.DoubleSide,
+                vertexShader,
+                fragmentShader,
+            });
         const geometry = new THREE.CircleGeometry(radius, 5, Math.PI / 10);
         const mesh = new THREE.Mesh(geometry, material);
         return mesh;
     }
 
     addDodecahedronHalf() {
-        const radius = 1;
-        const apothem = 0.809;
-        const angle = (2 * Math.PI) / 5;
-        const zAxis = new THREE.Vector3(0, 0, 1);
+        const { radius, apothem, zAxis, pentaAngle } = this;
 
         /** @type THREE.Mesh[] */
         this.halfGroup = new THREE.Group();
 
         // Central pentagon
-        this.halfGroup.add(this.createPentagon(radius, 0));
+        /* const material = new THREE.MeshBasicMaterial({ color: 'gray', side: THREE.DoubleSide }); */
+        this.halfGroup.add(this.createPentagon({ radius, index: 0 }));
 
         // 5 pentagonal "leafs"
         for (let i = 0; i < 5; i++) {
-            const penta = this.createPentagon(radius, i + 1);
+            const penta = this.createPentagon({ radius, index: i + 1 });
             penta.position.set(0, -apothem * 2, 0);
-            penta.position.applyAxisAngle(zAxis, angle * i);
-            penta.rotateZ(angle / 2);
+            penta.position.applyAxisAngle(zAxis, pentaAngle * i);
+            penta.rotateZ(pentaAngle / 2);
             this.halfGroup.add(penta);
         }
 
         this.scene.add(this.halfGroup);
     }
 
-    rotate() {
-        const apothem = 0.809;
-        const dihedralAngle = (Math.PI * 116.56505) / 180;
-        const angle = (2 * Math.PI) / 5;
-        const zAxis = new THREE.Vector3(0, 0, 1);
+    rotateLeafs() {
+        const { apothem, dihedralAngle, pentaAngle, zAxis } = this;
 
         /** @type THREE.Vector3[] */
         const rotationPoints = [];
@@ -96,8 +99,8 @@ export default class Sketch extends BaseSketch {
         for (let index = 0; index < pentas.length - 1; index++) {
             const point = new THREE.Vector3(0, -apothem, 0);
             const axis = new THREE.Vector3(1, 0, 0);
-            point.applyAxisAngle(zAxis, angle * index);
-            axis.applyAxisAngle(zAxis, angle * index);
+            point.applyAxisAngle(zAxis, pentaAngle * index);
+            axis.applyAxisAngle(zAxis, pentaAngle * index);
             rotationPoints.push(point);
             rotationAxis.push(axis.normalize());
         }
@@ -114,6 +117,9 @@ export default class Sketch extends BaseSketch {
     }
 
     animate() {
+        this.time += 0.01;
+
+        this.halfGroup.children[1].material.uniforms.u_time.value = this.time;
         this.halfGroup.rotateY(0.01);
         this.render();
         this.rafId = requestAnimationFrame(this.animate.bind(this));

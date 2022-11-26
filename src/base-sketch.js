@@ -24,6 +24,16 @@ export default class BaseSketch {
             0.001,
             1000,
         );
+        /* const frustumSize = 4; */
+        /* const aspect = this.width / this.height; */
+        /* this.camera = new THREE.OrthographicCamera( */
+        /*     (frustumSize * aspect) / -2, */
+        /*     (frustumSize * aspect) / 2, */
+        /*     frustumSize / 2, */
+        /*     frustumSize / -2, */
+        /*     0.1, */
+        /*     2000, */
+        /* ); */
 
         this.camera.position.set(2, 0, 4);
         this.camera.lookAt(0, 0, 0);
