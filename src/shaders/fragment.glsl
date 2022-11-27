@@ -1,27 +1,52 @@
-uniform vec3 u_lightPos;
-uniform sampler2D u_texture;
+#pragma glslify: snoise2 = require(glsl-noise/simplex/2d)
+
+uniform vec3 uLightPos;
+uniform sampler2D uTexture;
+uniform float uLightIntensity;
+uniform float uNoiseCoef;
+uniform float uNoiseMin;
+uniform float uNoiseMax;
+uniform float uNoiseScale;
 
 varying vec2 vUv;
 varying vec3 vNormal;
 varying vec3 vSurfaceToLight;
 varying vec3 vSurfaceToView;
 
-void main() {
-    vec2 uv = vUv - vec2(0.0, 0.0);
-    vec4 t = texture2D(u_texture, uv);
-    vec3 color = vec3(vUv, 0.0);
-    color = t.rgb;
-    color = max(color, vec3(0.5, 0.5, 0.7));
+vec3 light_reflection(vec3 lightColor) {
+    vec3 ambient = lightColor;
+    vec3 diffuse = lightColor * max(dot(vSurfaceToLight, vNormal), 0.0);
 
-    vec3 diffuse = color * max(dot(vSurfaceToLight, vNormal), 0.0);
-    vec3 ambient = color * 0.5;
     vec3 light = ambient + diffuse;
 
-    vec3 halfVector = normalize(vSurfaceToLight + vSurfaceToView);
+    // specular light
+    /* vec3 halfVector = normalize(vSurfaceToLight + vSurfaceToView);
     float specular = dot(vNormal, halfVector);
-    specular = pow(specular, 260.0);
-    light += specular * 0.2;
+    specular = pow(specular, 100.0);
+    light += specular * 0.5; */
 
-    // gl_FragColor = vec4(color, 1.0);
-    gl_FragColor = vec4(light, 1.0);
+    return light;
+}
+
+void main() {
+    if (!gl_FrontFacing) {
+        gl_FragColor = vec4(vec3(0.7), 1.0);
+        return;
+    }
+
+    vec2 uv = vUv;
+    vec3 color = texture2D(uTexture, uv).rgb;
+    vec3 lightColor = vec3(1.0, 1.0, 1.0);
+    vec3 light = light_reflection(lightColor);
+    light *= uLightIntensity;
+
+    vec2 uvScreen = gl_FragCoord.xy;
+    uvScreen /= uNoiseScale;
+
+    vec3 colorNoise = vec3(snoise2(uvScreen) * 0.5 + 0.5);
+    colorNoise *= clamp(uNoiseMin, uNoiseMax, pow(light.r, uNoiseCoef));
+
+    // gl_FragColor = vec4(light, 1.0);
+    gl_FragColor.rgb = max(colorNoise, color);
+    gl_FragColor.a = 1.0;
 }

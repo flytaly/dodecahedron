@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import * as dat from 'dat.gui';
 
 export default class BaseSketch {
     constructor(selector, withOrbitControls = true) {
@@ -52,6 +53,10 @@ export default class BaseSketch {
         window.addEventListener('resize', this.resize.bind(this));
     }
 
+    guiInit() {
+        this.gui = new dat.GUI();
+    }
+
     stop() {
         if (this.rafId) {
             cancelAnimationFrame(this.rafId);
@@ -87,7 +92,9 @@ export default class BaseSketch {
         texCanvas.width = maxTextureSize;
         texCanvas.height = maxTextureSize;
 
-        texCtx.fillStyle = '#fff';
+        texCtx.fillStyle = '#bbb';
+        texCtx.fillRect(0, 0, texCanvas.width, texCanvas.height);
+        texCtx.fillStyle = '#000';
         texCtx.strokeStyle = '#fff';
         texCtx.lineWidth = 1;
         texCtx.textAlign = 'center';

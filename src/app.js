@@ -24,16 +24,55 @@ export default class Sketch extends BaseSketch {
     constructor(selector) {
         super(selector, true);
 
-        this.setValues(1);
-        this.createHalves();
-
+        // light
+        this.lightPos = new THREE.Vector3(2, 1, 3);
         const g = new THREE.SphereGeometry(0.03, 4, 4);
         const m = new THREE.MeshPhongMaterial({ color: 'blue' });
-        const mesh = new THREE.Mesh(g, m);
-        mesh.position.set(3, 1, 2);
-        this.scene.add(mesh);
+        const lightHelper = new THREE.Mesh(g, m);
+        lightHelper.position.copy(this.lightPos);
+
+        this.initSettings();
+
+        this.mainGroup = new THREE.Group();
+        this.setValues(1);
+        this.createHalves();
+        this.mainGroup.add(this.frontGroup);
+        this.mainGroup.add(this.backGroup);
+        this.scene.add(this.mainGroup);
+
+        this.camera.position.set(3, 0, 3);
+        this.camera.lookAt(0, 0, 0);
+
+        this.scene.add(lightHelper);
 
         this.animate();
+    }
+
+    initSettings() {
+        this.guiInit();
+        this.settings = {
+            uLightIntensity: 0.6,
+            uNoiseCoef: 1,
+            uNoiseScale: 1.3,
+            uNoiseMin: 0.8,
+            uNoiseMax: 2.0,
+        };
+        this.gui.add(this.settings, 'uLightIntensity', 0, 3, 0.01);
+        this.gui.add(this.settings, 'uNoiseCoef', 0, 10, 0.01);
+        this.gui.add(this.settings, 'uNoiseScale', 0, 5, 0.01);
+        this.gui.add(this.settings, 'uNoiseMin', 0, 5, 0.01);
+        this.gui.add(this.settings, 'uNoiseMax', 0, 5, 0.01);
+    }
+
+    applySettings() {
+        const entries = Object.entries(this.settings);
+        const set = (p) => {
+            entries.forEach(([key, value]) => {
+                p.material.uniforms[key].value = value;
+            });
+        };
+        this.frontGroup.children.forEach(set);
+        this.backGroup.children.forEach(set);
     }
 
     setValues(radius = 1) {
@@ -72,19 +111,25 @@ export default class Sketch extends BaseSketch {
     }
 
     createPentagon({ radius = 1, index = 1, material = null }) {
+        const s = this.settings;
         material =
             material ||
             new THREE.ShaderMaterial({
                 uniforms: {
-                    u_time: { value: 0 },
-                    u_texture: { value: this.drawText({ text: index, horizontalPadding: 0.2 }) },
-                    u_bgColor: { value: new THREE.Color('blue') },
-                    u_lightPos: { value: new THREE.Vector3(3, 1, 2) },
+                    uTime: { value: 0 },
+                    uTexture: { value: this.drawText({ text: index, horizontalPadding: 0.2 }) },
+                    uLightPos: { value: this.lightPos },
+                    uLightIntensity: { value: s.uLightIntensity },
+                    uNoiseCoef: { value: s.uNoiseCoef },
+                    uNoiseScale: { value: s.uNoiseScale },
+                    uNoiseMin: { value: s.uNoiseMin },
+                    uNoiseMax: { value: s.uNoiseMin },
                 },
                 side: THREE.DoubleSide,
                 vertexShader,
                 fragmentShader,
             });
+
         const geometry = new THREE.CircleGeometry(radius, 5, Math.PI / 10);
         const mesh = new THREE.Mesh(geometry, material);
         return mesh;
@@ -144,8 +189,11 @@ export default class Sketch extends BaseSketch {
     animate() {
         this.time += 0.01;
 
-        this.frontGroup.children[1].material.uniforms.u_time.value = this.time;
-        /* this.dodec.rotateY(0.01); */
+        this.applySettings();
+
+        this.mainGroup.rotateY(0.004);
+        this.mainGroup.rotateX(0.002);
+
         this.render();
         this.rafId = requestAnimationFrame(this.animate.bind(this));
     }
