@@ -25,13 +25,10 @@ export default class Sketch extends BaseSketch {
         super(selector, true);
 
         // light
-        this.lightPos = new THREE.Vector3(2, 1, 3);
-        const g = new THREE.SphereGeometry(0.03, 4, 4);
-        const m = new THREE.MeshPhongMaterial({ color: 'blue' });
-        const lightHelper = new THREE.Mesh(g, m);
-        lightHelper.position.copy(this.lightPos);
-
         this.initSettings();
+
+        this.light();
+        this.setRaycaster();
 
         this.mainGroup = new THREE.Group();
         this.setValues(1);
@@ -40,12 +37,52 @@ export default class Sketch extends BaseSketch {
         this.mainGroup.add(this.backGroup);
         this.scene.add(this.mainGroup);
 
-        this.camera.position.set(3, 0, 3);
+        this.camera.position.set(0, 0, 6);
         this.camera.lookAt(0, 0, 0);
 
-        this.scene.add(lightHelper);
-
         this.animate();
+    }
+
+    light() {
+        this.lightPos = new THREE.Vector3(1, 2, 3);
+        const g = new THREE.SphereGeometry(0.03, 4, 4);
+        const m = new THREE.MeshPhongMaterial({ color: 'blue' });
+        this.lightHelper = new THREE.Mesh(g, m);
+        this.lightHelper.position.copy(this.lightPos);
+        this.scene.add(this.lightHelper);
+    }
+
+    setRaycaster() {
+        this.raycaster = new THREE.Raycaster();
+        this.pointer = new THREE.Vector2();
+
+        const planeGeo = new THREE.PlaneGeometry(30, 30, 10);
+        const planeMat = new THREE.MeshBasicMaterial({ color: 'red', opacity: 0.1, transparent: true });
+        const plane = new THREE.Mesh(planeGeo, planeMat);
+        plane.position.set(0, 0, this.lightPos.z);
+        plane.updateMatrixWorld();
+        /* this.scene.add(plane); */
+
+        const onPointerMove = (event) => {
+            // calculate pointer position in normalized device coordinates
+            // (-1 to +1) for both components
+
+            this.pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+            this.pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            // update the picking ray with the camera and pointer position
+            this.raycaster.setFromCamera(this.pointer, this.camera);
+
+            // calculate objects intersecting the picking ray
+            const intersects = this.raycaster.intersectObjects([plane]);
+
+            if (intersects[0]) {
+                this.lightHelper.position.copy(intersects[0].point);
+                this.lightPos.copy(intersects[0].point);
+            }
+        };
+
+        window.addEventListener('pointermove', onPointerMove);
     }
 
     initSettings() {
@@ -136,7 +173,7 @@ export default class Sketch extends BaseSketch {
     }
 
     /** @arg {THREE.Group} halfGroup */
-    addDodecahedronHalf(halfGroup, group) {
+    addDodecahedronHalf(halfGroup) {
         const { radius, apothem, zAxis, pentaAngle } = this;
 
         // Central pentagon

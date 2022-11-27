@@ -13,7 +13,7 @@ export default class BaseSketch {
 
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         this.renderer.setSize(this.width, this.height);
-        this.renderer.setClearColor(0xeeeeee, 1);
+        this.renderer.setClearColor(0xeeeeee, 0);
         this.renderer.physicallyCorrectLights = true;
         this.renderer.outputEncoding = THREE.sRGBEncoding;
 
@@ -25,7 +25,8 @@ export default class BaseSketch {
             0.001,
             1000,
         );
-        /* const frustumSize = 4; */
+
+        /* const frustumSize = 5; */
         /* const aspect = this.width / this.height; */
         /* this.camera = new THREE.OrthographicCamera( */
         /*     (frustumSize * aspect) / -2, */
@@ -74,6 +75,13 @@ export default class BaseSketch {
         this.height = this.container.offsetHeight;
         this.renderer.setSize(this.width, this.height);
         this.camera.aspect = this.width / this.height;
+
+        /* const aspect = this.width / this.height; */
+        /* const frustrum = 5; */
+        /* this.camera.left = (-aspect * frustrum) / 2; */
+        /* this.camera.right = (aspect * frustrum) / 2; */
+        /* this.camera.top = frustrum / 2; */
+        /* this.camera.bottom = frustrum / -2; */
 
         if (this.material && this.material.uniforms.u_resolution) {
             this.material.uniforms.u_resolution.value.x = this.width;
