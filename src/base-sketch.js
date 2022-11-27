@@ -35,7 +35,7 @@ export default class BaseSketch {
         /*     2000, */
         /* ); */
 
-        this.camera.position.set(2, 0, 4);
+        this.camera.position.set(4, 0, 0);
         this.camera.lookAt(0, 0, 0);
 
         if (withOrbitControls) {
