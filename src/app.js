@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import vertexShader from './shaders/vertex.glsl';
 import fragmentShader from './shaders/fragment.glsl';
 import BaseSketch from './base-sketch';
+import react from './react.png';
 
 /**
  * @arg {THREE.Object3D|THREE.Mesh} mesh
@@ -37,14 +38,14 @@ export default class Sketch extends BaseSketch {
         this.mainGroup.add(this.backGroup);
         this.scene.add(this.mainGroup);
 
-        this.camera.position.set(0, 0, 6);
+        this.camera.position.set(0, 0, 5);
         this.camera.lookAt(0, 0, 0);
 
         this.animate();
     }
 
     light() {
-        this.lightPos = new THREE.Vector3(1, 2, 3);
+        this.lightPos = new THREE.Vector3(1.5, -1.2, 2);
         const g = new THREE.SphereGeometry(0.03, 4, 4);
         const m = new THREE.MeshPhongMaterial({ color: 'blue' });
         this.lightHelper = new THREE.Mesh(g, m);
@@ -56,7 +57,7 @@ export default class Sketch extends BaseSketch {
         this.raycaster = new THREE.Raycaster();
         this.pointer = new THREE.Vector2();
 
-        const planeGeo = new THREE.PlaneGeometry(30, 30, 10);
+        const planeGeo = new THREE.PlaneGeometry(20, 20, 10);
         const planeMat = new THREE.MeshBasicMaterial({ color: 'red', opacity: 0.1, transparent: true });
         const plane = new THREE.Mesh(planeGeo, planeMat);
         plane.position.set(0, 0, this.lightPos.z);
@@ -89,16 +90,18 @@ export default class Sketch extends BaseSketch {
         this.guiInit();
         this.settings = {
             uLightIntensity: 0.6,
+            uLightPow: 8,
             uNoiseCoef: 1,
-            uNoiseScale: 1.3,
-            uNoiseMin: 0.8,
-            uNoiseMax: 2.0,
+            uNoiseScale: 8,
+            uSmallNoiseScale: 500,
+            uLinesDensity: 550,
         };
         this.gui.add(this.settings, 'uLightIntensity', 0, 3, 0.01);
+        this.gui.add(this.settings, 'uLightPow', 1, 100, 1);
         this.gui.add(this.settings, 'uNoiseCoef', 0, 10, 0.01);
-        this.gui.add(this.settings, 'uNoiseScale', 0, 5, 0.01);
-        this.gui.add(this.settings, 'uNoiseMin', 0, 5, 0.01);
-        this.gui.add(this.settings, 'uNoiseMax', 0, 5, 0.01);
+        this.gui.add(this.settings, 'uNoiseScale', 0, 20, 0.01);
+        this.gui.add(this.settings, 'uSmallNoiseScale', 0, 1000, 1);
+        this.gui.add(this.settings, 'uLinesDensity', 0, 1000, 1);
     }
 
     applySettings() {
@@ -157,16 +160,19 @@ export default class Sketch extends BaseSketch {
                     uTexture: { value: this.drawText({ text: index, horizontalPadding: 0.2 }) },
                     uLightPos: { value: this.lightPos },
                     uLightIntensity: { value: s.uLightIntensity },
+                    uLightPow: { value: s.uLightPow },
                     uNoiseCoef: { value: s.uNoiseCoef },
                     uNoiseScale: { value: s.uNoiseScale },
-                    uNoiseMin: { value: s.uNoiseMin },
-                    uNoiseMax: { value: s.uNoiseMin },
+                    uSmallNoiseScale: { value: s.uSmallNoiseScale },
+                    uLinesDensity: { value: s.uLinesDensity },
                 },
                 side: THREE.DoubleSide,
                 vertexShader,
                 fragmentShader,
             });
-
+        if (Math.random() > 0.3) {
+            material.uniforms.uTexture.value = new THREE.TextureLoader().load(react);
+        }
         const geometry = new THREE.CircleGeometry(radius, 5, Math.PI / 10);
         const mesh = new THREE.Mesh(geometry, material);
         return mesh;

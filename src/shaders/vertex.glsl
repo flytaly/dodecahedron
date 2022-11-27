@@ -2,6 +2,7 @@ uniform float uTime;
 uniform vec3 uLightPos;
 
 varying vec2 vUv;
+varying vec2 vScreenSpace;
 varying vec3 vNormal;
 varying vec3 vSurfaceToLight;
 varying vec3 vSurfaceToView;
@@ -16,7 +17,7 @@ void main() {
     // float dihedral = PI * 116.56505 * 0.0055556;
 
     vec4 pos = vec4(position, 1.0);
-    pos.xyz *= 0.95;
+    // pos.xyz *= 0.9;
 
     gl_Position = projectionMatrix * modelViewMatrix * pos;
 
@@ -26,4 +27,5 @@ void main() {
     vSurfaceToLight = normalize(worldLightPos - surfaceToLightDirection);
 
     vSurfaceToView = gl_Position.xyz - surfaceToLightDirection;
+    vScreenSpace = gl_Position.xy / gl_Position.w;
 }
