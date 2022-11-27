@@ -25,7 +25,7 @@ export default class Sketch extends BaseSketch {
         super(selector, true);
 
         this.setValues(1);
-        this.createHalfs();
+        this.createHalves();
 
         const g = new THREE.SphereGeometry(0.03, 4, 4);
         const m = new THREE.MeshPhongMaterial({ color: 'blue' });
@@ -54,7 +54,7 @@ export default class Sketch extends BaseSketch {
         this.halfDistance = (Math.cos(this.dihedralAngle - Math.PI / 2) * (height + h2)) / 2;
     }
 
-    createHalfs() {
+    createHalves() {
         this.frontGroup = new THREE.Group();
         this.backGroup = new THREE.Group();
         this.dodec = new THREE.Group();
