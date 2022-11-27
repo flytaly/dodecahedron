@@ -2,7 +2,20 @@ import * as THREE from 'three';
 import vertexShader from './shaders/vertex.glsl';
 import fragmentShader from './shaders/fragment.glsl';
 import BaseSketch from './base-sketch';
-import react from './react.png';
+import js from './logos/js_logo.png';
+import react from './logos/react_logo.png';
+import ts from './logos/typescript_logo.png';
+import svelte from './logos/svelte_logo.png';
+import node from './logos/node_logo.png';
+import go from './logos/go_logo.png';
+import postgres from './logos/postgres_logo.png';
+import redis from './logos/redis_logo.png';
+import threejs from './logos/threejs_logo.png';
+import ws from './logos/websocket_logo.png';
+import html from './logos/html_logo.png';
+import css from './logos/css_logo.png';
+
+const logos = [js, node, ts, svelte, go, react, postgres, redis, threejs, ws, html, css];
 
 /**
  * @arg {THREE.Object3D|THREE.Mesh} mesh
@@ -93,8 +106,8 @@ export default class Sketch extends BaseSketch {
             uLightPow: 8,
             uNoiseCoef: 1,
             uNoiseScale: 8,
-            uSmallNoiseScale: 500,
-            uLinesDensity: 550,
+            uSmallNoiseScale: 300,
+            uLinesDensity: 350,
         };
         this.gui.add(this.settings, 'uLightIntensity', 0, 3, 0.01);
         this.gui.add(this.settings, 'uLightPow', 1, 100, 1);
@@ -138,8 +151,8 @@ export default class Sketch extends BaseSketch {
         this.backGroup = new THREE.Group();
         this.dodec = new THREE.Group();
 
-        this.addDodecahedronHalf(this.frontGroup);
-        this.addDodecahedronHalf(this.backGroup);
+        this.addDodecahedronHalf(this.frontGroup, 0);
+        this.addDodecahedronHalf(this.backGroup, 6);
 
         this.backGroup.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), Math.PI);
         this.backGroup.rotateOnAxis(new THREE.Vector3(0, 0, 1), this.pentaAngle / 2);
@@ -157,7 +170,7 @@ export default class Sketch extends BaseSketch {
             new THREE.ShaderMaterial({
                 uniforms: {
                     uTime: { value: 0 },
-                    uTexture: { value: this.drawText({ text: index, horizontalPadding: 0.2 }) },
+                    uTexture: { value: null },
                     uLightPos: { value: this.lightPos },
                     uLightIntensity: { value: s.uLightIntensity },
                     uLightPow: { value: s.uLightPow },
@@ -170,25 +183,31 @@ export default class Sketch extends BaseSketch {
                 vertexShader,
                 fragmentShader,
             });
-        if (Math.random() > 0.3) {
-            material.uniforms.uTexture.value = new THREE.TextureLoader().load(react);
+
+        if (logos[index]) {
+            material.uniforms.uTexture.value = new THREE.TextureLoader().load(logos[index]);
+        } else {
+            material.uniforms.uTexture.value = this.drawText({ text: index, horizontalPadding: 0.2 });
         }
+        /* if (Math.random() > 0.3) { */
+        /*     material.uniforms.uTexture.value = new THREE.TextureLoader().load(react); */
+        /* } */
         const geometry = new THREE.CircleGeometry(radius, 5, Math.PI / 10);
         const mesh = new THREE.Mesh(geometry, material);
         return mesh;
     }
 
     /** @arg {THREE.Group} halfGroup */
-    addDodecahedronHalf(halfGroup) {
+    addDodecahedronHalf(halfGroup, pentagonIndex = 0) {
         const { radius, apothem, zAxis, pentaAngle } = this;
 
         // Central pentagon
         /* const material = new THREE.MeshBasicMaterial({ color: 'gray', side: THREE.DoubleSide }); */
-        halfGroup.add(this.createPentagon({ radius, index: 0 }));
+        halfGroup.add(this.createPentagon({ radius, index: pentagonIndex }));
 
         // 5 pentagonal "leafs"
         for (let i = 0; i < 5; i++) {
-            const penta = this.createPentagon({ radius, index: i + 1 });
+            const penta = this.createPentagon({ radius, index: pentagonIndex + i + 1 });
             penta.position.set(0, -apothem * 2, 0);
             penta.position.applyAxisAngle(zAxis, pentaAngle * i);
             penta.rotateZ(pentaAngle / 2);

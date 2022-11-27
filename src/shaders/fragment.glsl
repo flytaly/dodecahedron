@@ -46,8 +46,9 @@ void main() {
         return;
     }
 
-    vec2 uv = vUv * 2.0 - 0.5;
+    vec2 uv = vUv;
     vec3 color = texture2D(uTexture, uv).rgb;
+
     vec3 lightColor = vec3(1.0, 1.0, 1.0);
     vec3 light = light_reflection(lightColor);
     light *= uLightIntensity;
@@ -82,7 +83,7 @@ void main() {
     strokes += smallnoise + bignoise;
 
     float lightValue = light.r;
-    lightValue *= pow(lightValue, uLightPow);
+    lightValue = pow(lightValue, uLightPow);
 
     strokes = 1.0 - smoothstep(lightValue - 1.0, lightValue, strokes);
 
