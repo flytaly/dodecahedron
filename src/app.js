@@ -4,78 +4,52 @@ import fragmentShader from './shaders/fragment.glsl';
 import BaseSketch from './base-sketch';
 import { logos } from './logo';
 import fbmTexture from './fbm.png';
-
-/**
- * @arg {THREE.Object3D|THREE.Mesh} mesh
- * @arg {THREE.Vector3} point - the point of rotation
- * @arg {THREE.Vector3} axis - the axis of rotation (normalized)
- * @arg {number} theta - radian value of rotation */
-function rotateAboutPoint(mesh, point, axis, theta, world = false) {
-    mesh.position.sub(point); // remove the offset
-    mesh.position.applyAxisAngle(axis, theta); // rotate the POSITION
-    mesh.position.add(point); // re-add the offset
-    // rotate the OBJECT
-    if (world) {
-        mesh.rotateOnWorldAxis(axis, theta);
-        return;
-    }
-    mesh.rotateOnAxis(axis, theta);
-}
+import { animate, easeInExpo, easeOutQuint, lerp, rotateAboutPoint } from './helpers';
 
 export default class Sketch extends BaseSketch {
     constructor(selector) {
         super(selector, true);
 
-        // light
         this.initSettings();
+        this.calcValues(1);
 
+        // light
         this.light();
         this.setRaycaster();
 
-        this.mainGroup = new THREE.Group();
-        this.setValues(1);
         this.createHalves();
+
+        this.mainGroup = new THREE.Group();
         this.mainGroup.add(this.frontGroup);
         this.mainGroup.add(this.backGroup);
         this.scene.add(this.mainGroup);
 
-        this.camera.position.set(0, 0, 3);
+        /* this.camera.position.set(0, 0, 3); */
+        /* this.camera.lookAt(0, 0, 0); */
+
+        this.camera.position.set(0, 0, 6);
         this.camera.lookAt(0, 0, 0);
 
-        this.animateApperance();
+        this.runIntroAnimations();
         this.animate();
     }
 
-    animateApperance(duration = 2 * 1000) {
-        let apperanceStartTime = 0;
+    async runIntroAnimations() {
+        // animate apperance
+        animate((t) => (this.settings.uProgress = t), { duration: 2000 });
+        setTimeout(() => {
+            const finalAngle = Math.PI - this.dihedralAngle;
+            let currentAngle = 0;
 
-        function easeInOutCirc(x) {
-            return x < 0.5 //
-                ? (1 - Math.sqrt(1 - Math.pow(2 * x, 2))) / 2
-                : (Math.sqrt(1 - Math.pow(-2 * x + 2, 2)) + 1) / 2;
-        }
-        function easeOutQuint(x) {
-            return 1 - Math.pow(1 - x, 5);
-        }
-
-        const easing = easeOutQuint;
-
-        const apperanceAnim = () => {
-            const progress = (Date.now() - apperanceStartTime) / duration;
-
-            if (progress >= 1) {
-                this.settings.uProgress = 1;
-                return;
-            }
-            this.settings.uProgress = easing(progress);
-            requestAnimationFrame(apperanceAnim);
-        };
-
-        requestAnimationFrame(() => {
-            this.settings.uProgress = 0;
-            apperanceStartTime = Date.now();
-            apperanceAnim();
-        });
+            const rotate = (t) => {
+                const target = lerp(0, finalAngle, t);
+                const rotation = Math.max(target - currentAngle, 0);
+                currentAngle += rotation;
+                this.rotateLeafs(this.frontGroup, rotation);
+                this.rotateLeafs(this.backGroup, rotation);
+            };
+            animate(rotate, { duration: 2000, easing: easeOutQuint });
+        }, 2000);
     }
 
     light() {
@@ -151,7 +125,7 @@ export default class Sketch extends BaseSketch {
         this.backGroup.children.forEach(set);
     }
 
-    setValues(radius = 1) {
+    calcValues(radius = 1) {
         this.radius = radius;
         this.pentaAngle = (2 * Math.PI) / 5;
         this.apothem = Math.cos(this.pentaAngle / 2) * radius;
@@ -167,6 +141,26 @@ export default class Sketch extends BaseSketch {
         const h2 = a * Math.sin(this.pentaAngle);
         // now we need to use projection of the middle point between height and h2
         this.halfDistance = (Math.cos(this.dihedralAngle - Math.PI / 2) * (height + h2)) / 2;
+
+        this.calcRotations();
+    }
+
+    calcRotations() {
+        const { apothem, pentaAngle, zAxis } = this;
+
+        /** @type THREE.Vector3[] */
+        this.rotationPoints = [];
+        /** @type THREE.Vector3[] */
+        this.rotationAxis = [];
+
+        for (let index = 0; index < 5; index++) {
+            const point = new THREE.Vector3(0, -apothem, 0);
+            const axis = new THREE.Vector3(1, 0, 0);
+            point.applyAxisAngle(zAxis, pentaAngle * index);
+            axis.applyAxisAngle(zAxis, pentaAngle * index);
+            this.rotationPoints.push(point);
+            this.rotationAxis.push(axis.normalize());
+        }
     }
 
     createHalves() {
@@ -179,11 +173,12 @@ export default class Sketch extends BaseSketch {
 
         this.backGroup.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), Math.PI);
         this.backGroup.rotateOnAxis(new THREE.Vector3(0, 0, 1), this.pentaAngle / 2);
+
+        /* this.frontGroup.position.set(0, 0, 0.1); */
+        /* this.backGroup.position.set(0, 0, -0.1); */
+
         this.frontGroup.position.set(0, 0, this.halfDistance);
         this.backGroup.position.set(0, 0, -this.halfDistance);
-
-        this.rotateLeafs(this.frontGroup);
-        this.rotateLeafs(this.backGroup);
     }
 
     createPentagon({ radius = 1, index = 1, material = null }) {
@@ -205,7 +200,7 @@ export default class Sketch extends BaseSketch {
                     uLinesDensity: { value: s.uLinesDensity },
                     uProgress: { value: s.uProgress },
                 },
-                /* side: THREE.DoubleSide, */
+                side: THREE.DoubleSide,
                 vertexShader,
                 fragmentShader,
                 transparent: true,
@@ -244,32 +239,18 @@ export default class Sketch extends BaseSketch {
         this.scene.add(halfGroup);
     }
 
-    /** @arg {THREE.Group} group */
-    rotateLeafs(group) {
-        const { apothem, dihedralAngle, pentaAngle, zAxis } = this;
-
-        /** @type THREE.Vector3[] */
-        const rotationPoints = [];
-        /** @type THREE.Vector3[] */
-        const rotationAxis = [];
-
+    /**
+     * @arg {THREE.Group} group - group of 6 pentagons
+     * @arg {number} angle
+     * */
+    rotateLeafs(group, angle = Math.PI - this.dihedralAngle) {
         const pentagons = group.children;
-
-        for (let index = 0; index < pentagons.length - 1; index++) {
-            const point = new THREE.Vector3(0, -apothem, 0);
-            const axis = new THREE.Vector3(1, 0, 0);
-            point.applyAxisAngle(zAxis, pentaAngle * index);
-            axis.applyAxisAngle(zAxis, pentaAngle * index);
-            rotationPoints.push(point);
-            rotationAxis.push(axis.normalize());
-        }
-
         for (let i = 1; i < pentagons.length; i++) {
             rotateAboutPoint(
                 pentagons[i], //
-                rotationPoints[i - 1],
-                rotationAxis[i - 1],
-                Math.PI - dihedralAngle,
+                this.rotationPoints[i - 1],
+                this.rotationAxis[i - 1],
+                angle,
                 true,
             );
         }
@@ -280,8 +261,8 @@ export default class Sketch extends BaseSketch {
 
         this.applySettings();
 
-        this.mainGroup.rotateY(0.004);
-        this.mainGroup.rotateX(0.002);
+        this.mainGroup.rotateX(0.003);
+        this.mainGroup.rotateY(0.005);
 
         this.render();
         this.rafId = requestAnimationFrame(this.animate.bind(this));

@@ -106,7 +106,7 @@ void main() {
 
     float appearance = uProgress;
 
-    appearance = mix(noiseTexture - 0.75, 1.0, appearance);
+    appearance = mix(noiseTexture - 1.0, 1.0, appearance);
     float dist = (1.0 - uvScreen.y) * 0.5; // [-1,1] =>  [1,0]
     // float dist = length(uvScreen);
     appearance = smoothstep(appearance, appearance - 0.08, dist);
