@@ -2,7 +2,6 @@ uniform float uTime;
 uniform vec3 uLightPos;
 
 varying vec2 vUv;
-varying vec2 vScreenSpace;
 varying vec3 vNormal;
 varying vec3 vSurfaceToLight;
 varying vec3 vSurfaceToView;
@@ -27,5 +26,4 @@ void main() {
     vSurfaceToLight = normalize(worldLightPos - surfaceToLightDirection);
 
     vSurfaceToView = gl_Position.xyz - surfaceToLightDirection;
-    vScreenSpace = gl_Position.xy / gl_Position.w;
 }

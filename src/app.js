@@ -2,20 +2,8 @@ import * as THREE from 'three';
 import vertexShader from './shaders/vertex.glsl';
 import fragmentShader from './shaders/fragment.glsl';
 import BaseSketch from './base-sketch';
-import js from './logos/js_logo.png';
-import react from './logos/react_logo.png';
-import ts from './logos/typescript_logo.png';
-import svelte from './logos/svelte_logo.png';
-import node from './logos/node_logo.png';
-import go from './logos/go_logo.png';
-import postgres from './logos/postgres_logo.png';
-import redis from './logos/redis_logo.png';
-import threejs from './logos/threejs_logo.png';
-import ws from './logos/websocket_logo.png';
-import html from './logos/html_logo.png';
-import css from './logos/css_logo.png';
-
-const logos = [js, node, ts, svelte, go, react, postgres, redis, threejs, ws, html, css];
+import { logos } from './logo';
+import fbmTexture from './fbm.png';
 
 /**
  * @arg {THREE.Object3D|THREE.Mesh} mesh
@@ -51,7 +39,7 @@ export default class Sketch extends BaseSketch {
         this.mainGroup.add(this.backGroup);
         this.scene.add(this.mainGroup);
 
-        this.camera.position.set(0, 0, 5);
+        this.camera.position.set(0, 0, 3);
         this.camera.lookAt(0, 0, 0);
 
         this.animate();
@@ -108,6 +96,7 @@ export default class Sketch extends BaseSketch {
             uNoiseScale: 8,
             uSmallNoiseScale: 300,
             uLinesDensity: 350,
+            uProgress: 1.0,
         };
         this.gui.add(this.settings, 'uLightIntensity', 0, 3, 0.01);
         this.gui.add(this.settings, 'uLightPow', 1, 100, 1);
@@ -115,6 +104,7 @@ export default class Sketch extends BaseSketch {
         this.gui.add(this.settings, 'uNoiseScale', 0, 20, 0.01);
         this.gui.add(this.settings, 'uSmallNoiseScale', 0, 1000, 1);
         this.gui.add(this.settings, 'uLinesDensity', 0, 1000, 1);
+        this.gui.add(this.settings, 'uProgress', 0, 1, 0.01);
     }
 
     applySettings() {
@@ -170,7 +160,9 @@ export default class Sketch extends BaseSketch {
             new THREE.ShaderMaterial({
                 uniforms: {
                     uTime: { value: 0 },
+                    uResolution: { value: new THREE.Vector2(this.width, this.height) },
                     uTexture: { value: null },
+                    uNoiseTexture: { value: new THREE.TextureLoader().load(fbmTexture) },
                     uLightPos: { value: this.lightPos },
                     uLightIntensity: { value: s.uLightIntensity },
                     uLightPow: { value: s.uLightPow },
@@ -178,20 +170,22 @@ export default class Sketch extends BaseSketch {
                     uNoiseScale: { value: s.uNoiseScale },
                     uSmallNoiseScale: { value: s.uSmallNoiseScale },
                     uLinesDensity: { value: s.uLinesDensity },
+                    uProgress: { value: s.uProgress },
                 },
-                side: THREE.DoubleSide,
+                /* side: THREE.DoubleSide, */
                 vertexShader,
                 fragmentShader,
+                transparent: true,
             });
 
+        if (!this.materials) this.materials = [];
+        this.materials.push(material);
         if (logos[index]) {
             material.uniforms.uTexture.value = new THREE.TextureLoader().load(logos[index]);
         } else {
             material.uniforms.uTexture.value = this.drawText({ text: index, horizontalPadding: 0.2 });
         }
-        /* if (Math.random() > 0.3) { */
-        /*     material.uniforms.uTexture.value = new THREE.TextureLoader().load(react); */
-        /* } */
+
         const geometry = new THREE.CircleGeometry(radius, 5, Math.PI / 10);
         const mesh = new THREE.Mesh(geometry, material);
         return mesh;

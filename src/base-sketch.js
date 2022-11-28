@@ -25,7 +25,6 @@ export default class BaseSketch {
             0.001,
             1000,
         );
-
         /* const frustumSize = 5; */
         /* const aspect = this.width / this.height; */
         /* this.camera = new THREE.OrthographicCamera( */
@@ -83,11 +82,13 @@ export default class BaseSketch {
         /* this.camera.top = frustrum / 2; */
         /* this.camera.bottom = frustrum / -2; */
 
-        if (this.material && this.material.uniforms.u_resolution) {
-            this.material.uniforms.u_resolution.value.x = this.width;
-            this.material.uniforms.u_resolution.value.y = this.height;
-            this.material.uniforms.u_resolution.value.z = this.width;
-            this.material.uniforms.u_resolution.value.w = this.height;
+        if (this.materials) {
+            this.materials.forEach((m) => {
+                m.uniforms.uResolution.value.x = this.width;
+                m.uniforms.uResolution.value.y = this.height;
+                m.uniforms.uResolution.value.z = this.width;
+                m.uniforms.uResolution.value.w = this.height;
+            });
         }
         this.camera.updateProjectionMatrix();
     }

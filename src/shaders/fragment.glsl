@@ -1,17 +1,19 @@
 uniform vec3 uLightPos;
+uniform vec2 uResolution;
 uniform sampler2D uTexture;
+uniform sampler2D uNoiseTexture;
 uniform float uLightPow;
 uniform float uLightIntensity;
 uniform float uNoiseCoef;
 uniform float uNoiseScale;
 uniform float uSmallNoiseScale;
 uniform float uLinesDensity;
+uniform float uProgress;
 
 varying vec2 vUv;
 varying vec3 vNormal;
 varying vec3 vSurfaceToLight;
 varying vec3 vSurfaceToView;
-varying vec2 vScreenSpace;
 
 // https://gist.github.com/patriciogonzalezvivo/670c22f3966e662d2f83
 float rand(vec2 n) {
@@ -47,6 +49,8 @@ void main() {
     }
 
     vec2 uv = vUv;
+    vec2 uvScreen = 2.0 * gl_FragCoord.xy / uResolution.xy - 1.0;
+    uvScreen.x *= uResolution.x / uResolution.y;
     vec3 color = texture2D(uTexture, uv).rgb;
 
     vec3 lightColor = vec3(1.0, 1.0, 1.0);
@@ -70,13 +74,14 @@ void main() {
     //===============================
     // strokes noise
     //===============================
-    // diagonal strokes
-    float strokes = cos((vScreenSpace.x + vScreenSpace.y) * uLinesDensity);
 
-    float smallnoise = noise(uSmallNoiseScale * vScreenSpace);
+    // diagonal strokes
+    float strokes = cos((uvScreen.x + uvScreen.y) * uLinesDensity);
+
+    float smallnoise = noise(uSmallNoiseScale * uvScreen);
     smallnoise = smallnoise * 2.0 - 1.0; // [0, 1] => [-1, 1]
 
-    float bignoise = noise(uNoiseScale * vScreenSpace);
+    float bignoise = noise(uNoiseScale * uvScreen);
     bignoise = bignoise * 2.0 - 1.0;
 
     // noisy strokes
@@ -87,12 +92,28 @@ void main() {
 
     strokes = 1.0 - smoothstep(lightValue - 1.0, lightValue, strokes);
 
-    vec3 linesColor = vec3(strokes + light * 0.4);
+    vec3 linesColor = vec3(strokes + light * 0.2);
 
     linesColor = max(linesColor, color);
 
     color = mix(color, linesColor, light * 0.3);
     // color += light * 0.2;
+
     gl_FragColor = vec4(color, 1.0);
+
+    // progress
+    float noiseTexture = texture2D(uNoiseTexture, (uvScreen + 1.0) * 0.5).r;
+
+    float appearance = uProgress;
+
+    appearance = mix(noiseTexture - 0.75, 1.0, appearance);
+    float dist = (1.0 - uvScreen.y) * 0.5; // [-1,1] =>  [1,0]
+    // float dist = length(uvScreen);
+    appearance = smoothstep(appearance, appearance - 0.08, dist);
+    // color += vec3(appearance);
+    gl_FragColor.a = appearance;
+
+    // gl_FragColor = vec4(vec3(appearance), 1.0);
     // gl_FragColor = vec4(vec3(strokes), 1.0);
+
 }
