@@ -42,7 +42,40 @@ export default class Sketch extends BaseSketch {
         this.camera.position.set(0, 0, 3);
         this.camera.lookAt(0, 0, 0);
 
+        this.animateApperance();
         this.animate();
+    }
+
+    animateApperance(duration = 2 * 1000) {
+        let apperanceStartTime = 0;
+
+        function easeInOutCirc(x) {
+            return x < 0.5 //
+                ? (1 - Math.sqrt(1 - Math.pow(2 * x, 2))) / 2
+                : (Math.sqrt(1 - Math.pow(-2 * x + 2, 2)) + 1) / 2;
+        }
+        function easeOutQuint(x) {
+            return 1 - Math.pow(1 - x, 5);
+        }
+
+        const easing = easeOutQuint;
+
+        const apperanceAnim = () => {
+            const progress = (Date.now() - apperanceStartTime) / duration;
+
+            if (progress >= 1) {
+                this.settings.uProgress = 1;
+                return;
+            }
+            this.settings.uProgress = easing(progress);
+            requestAnimationFrame(apperanceAnim);
+        };
+
+        requestAnimationFrame(() => {
+            this.settings.uProgress = 0;
+            apperanceStartTime = Date.now();
+            apperanceAnim();
+        });
     }
 
     light() {
